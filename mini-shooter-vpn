@@ -1,0 +1,145 @@
+File structure
+/mini-shooter
+  ├── index.html
+  ├── style.css
+  ├── script.js
+  ├── manifest.json
+  ├── sw.js
+  └── icons/
+        ├── icon-192.png
+        └── icon-512.png
+index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Shooter</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<div id="ui">
+  <div>Score: <span id="score">0</span> | Ammo: <span id="ammo">10</span></div>
+  <div>
+    <button onclick="selectGun('ak47')">AK-47</button>
+    <button onclick="selectGun('m16')">M16</button>
+    <button onclick="selectGun('shotgun')">Shotgun</button>
+    <button onclick="reloadGun()">Reload</button>
+  </div>
+</div>
+
+<audio id="ak47" src="https://www.soundjay.com/mechanical/sounds/gun-shot-01.mp3"></audio>
+<audio id="m16" src="https://www.soundjay.com/mechanical/sounds/gun-shot-02.mp3"></audio>
+<audio id="shotgun" src="https://www.soundjay.com/mechanical/sounds/shotgun-01.mp3"></audio>
+<audio id="reload" src="https://www.soundjay.com/mechanical/sounds/reload-01.mp3"></audio>
+
+<script src="script.js"></script>
+<script>
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js")
+  .then(()=>console.log("Service Worker Registered"))
+  .catch(err=>console.log(err));
+}
+</script>
+</body>
+</html>
+style.css
+body{margin:0;padding:0;font-family:Arial;background:#111;touch-action:manipulation;}
+#gameCanvas{display:block;margin:0 auto;background:#333 url('https://i.imgur.com/YuK3hL5.jpg') no-repeat center center;background-size:cover;}
+#ui{position:fixed;top:10px;left:50%;transform:translateX(-50%);color:white;text-align:center;font-size:18px;z-index:10;}
+button{padding:10px 20px;margin:5px;font-size:16px;border-radius:8px;border:none;cursor:pointer;background-color:#e53935;color:white;}
+button:hover{background-color:#b71c1c;}
+script.js
+const canvas=document.getElementById('gameCanvas');const ctx=canvas.getContext('2d');let score=0,gun='ak47',ammo=10;const targets=[],targetSize=50;
+
+function selectGun(selected){gun=selected;}
+function reloadGun(){ammo=10;document.getElementById('ammo').innerText=ammo;document.getElementById('reload').play();}
+function spawnTarget(){const x=Math.random()*(canvas.width-targetSize),y=Math.random()*(canvas.height-targetSize),speedX=(Math.random()-0.5)*2,speedY=(Math.random()-0.5)*2;targets.push({x,y,speedX,speedY,hit:false});}
+function drawTargets(){targets.forEach(t=>{if(!t.hit){ctx.fillStyle='red';ctx.beginPath();ctx.arc(t.x+targetSize/2,t.y+targetSize/2,targetSize/2,0,2*Math.PI);ctx.fill();}});}
+function moveTargets(){targets.forEach(t=>{if(!t.hit){t.x+=t.speedX;t.y+=t.speedY;if(t.x<0||t.x>canvas.width-targetSize)t.speedX*=-1;if(t.y<0||t.y>canvas.height-targetSize)t.speedY*=-1;}});}
+canvas.addEventListener('click',e=>{if(ammo<=0)return;const rect=canvas.getBoundingClientRect();const mx=e.clientX-rect.left,my=e.clientY-rect.top;targets.forEach(t=>{if(!t.hit&&mx>t.x&&mx<t.x+targetSize&&my>t.y&&my<t.y+targetSize){t.hit=true;score++;document.getElementById('score').innerText=score;}});ammo--;document.getElementById('ammo').innerText=ammo;const audio=document.getElementById(gun);audio.currentTime=0;audio.play();});
+function gameLoop(){ctx.clearRect(0,0,canvas.width,canvas.height);if(Math.random()<0.02&&targets.length<5)spawnTarget();moveTargets();drawTargets();requestAnimationFrame(gameLoop);}
+gameLoop();
+manifest.json
+{
+"name":"Mini Shooter",
+"short_name":"Shooter",
+"description":"Mini Shooter game",
+"start_url":"index.html",
+"display":"standalone",
+"background_color":"#111111",
+"theme_color":"#00796b",
+"icons":[
+{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},
+{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"}
+]
+}
+sw.js
+const CACHE_NAME="mini-shooter-cache-v1";const urlsToCache=["/index.html","/style.css","/script.js","/manifest.json"];self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(urlsToCache)));});self.addEventListener("fetch",e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
+/vpn-app/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini VPN</title>
+<link rel="manifest" href="manifest.json">
+<style>
+body{font-family:Arial;margin:0;padding:0;background:#e0f2f1;display:flex;flex-direction:column;align-items:center;}
+header{width:100%;background:#00796b;color:white;padding:20px 0;text-align:center;font-size:24px;}
+main{margin-top:30px;width:90%;max-width:400px;background:white;border-radius:10px;padding:20px;display:flex;flex-direction:column;align-items:center;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+button{width:80%;padding:15px;margin:10px 0;font-size:18px;color:white;background:#00796b;border:none;border-radius:5px;cursor:pointer;}
+button:hover{background-color:#004d40;}
+p.status{margin-top:20px;font-weight:bold;color:#00796b;}
+</style>
+</head>
+<body>
+<header>Mini VPN App</header>
+<main>
+<p>Select a server:</p>
+<button onclick="connectVPN('USA')">USA</button>
+<button onclick="connectVPN('UK')">UK</button>
+<button onclick="connectVPN('Germany')">Germany</button>
+<button onclick="connectVPN('Japan')">Japan</button>
+<button onclick="connectVPN('Australia')">Australia</button>
+<p class="status" id="vpnStatus">Status: Disconnected</p>
+</main>
+<script>
+function connectVPN(country){document.getElementById("vpnStatus").innerText=`Status: Connected to ${country}`;}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js");}
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Click Game</title>
+<link rel="manifest" href="manifest.json">
+<style>
+body{margin:0;padding:0;font-family:Arial;background:#222;color:white;display:flex;flex-direction:column;align-items:center;}
+header{width:100%;background:#444;padding:20px 0;text-align:center;font-size:28px;}
+main{margin-top:30px;text-align:center;}
+button{padding:20px 40px;font-size:24px;margin-top:20px;border-radius:10px;border:none;background:#e53935;color:white;cursor:pointer;}
+button:hover{background:#b71c1c;}
+#score{font-size:36px;margin-top:20px;display:block;}
+</style>
+</head>
+<body>
+<header>Click Game</header>
+<main>
+<button onclick="addScore()">Click Me!</button>
+<span id="score">0</span>
+</main>
+<script>
+let score=0;
+function addScore(){score++;document.getElementById("score").innerText=score;}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js");}
+</script>
+</body>
+</html>
+manifest.json & sw.js → same structure as above.
